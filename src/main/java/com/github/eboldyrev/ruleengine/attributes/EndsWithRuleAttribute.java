@@ -7,6 +7,11 @@ public class EndsWithRuleAttribute extends BasicRuleAttribute {
     }
 
     @Override
+    public String asString() {
+        return name + divider + anyCharsValue + value;
+    }
+
+    @Override
     public boolean calculate(RuleAttribute other){
         return this.name.equals(other.getName()) && other.getValue().endsWith(this.value);
     }

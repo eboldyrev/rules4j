@@ -1,28 +1,64 @@
 package com.github.eboldyrev.ruleengine;
 
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
+import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 import com.github.eboldyrev.ruleengine.exception.MultiplyRulesFound;
-import com.github.eboldyrev.ruleengine.exception.NoRulesFound;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RuleEngine {
 
-    private List<Rule> rules = new ArrayList<>();
+    private AtomicReference<List<Rule>> rulesRef = new AtomicReference<>(new ArrayList<>());
+    private Function<String, String> valueTransformator = null;
 
-    public void addRule(String ruleStr){
-        rules.add(Rule.ruleFromString(ruleStr));
+    public RuleEngine() {
+    }
+
+    public RuleEngine(Function<String, String> valueTransformator) {
+        this.valueTransformator = valueTransformator;
+    }
+
+    public Rule parseRule(String ruleStr){
+        return Rule.ruleFromString(ruleStr, valueTransformator);
+    }
+
+    public List<Rule> parseRules(Set<String> ruleStrs) throws InvalidRuleStructure {
+        List<Rule> rules = new ArrayList<>(ruleStrs.size());
+        for (String ruleStr : ruleStrs) {
+            Rule rule = parseRule(ruleStr);
+            rules.add(rule);
+        }
+        return rules;
+    }
+
+    public void setRules(Set<String> ruleStrs){
+        rulesRef.set(parseRules(ruleStrs));
+    }
+
+    public List<Rule> getRules(){
+        return Collections.unmodifiableList(rulesRef.get());
+    }
+
+    public Set<String> getRulesAsStrings(){
+        List<Rule> rules = rulesRef.get();
+        Set<String> result = new HashSet<>(rules.size());
+        for (Rule rule : rules) {
+            result.add(rule.asString());
+        }
+        return result;
     }
 
     public String query(String queryAttrs){
-        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs);
+        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs, valueTransformator);
 
         List<RuleResult> possibleResults = new ArrayList<>();
         RuleResult notEqualResult = RuleResult.notEqual(null);
         possibleResults.add(notEqualResult);
-        for (Rule rule : rules) {
+        List<Rule> currentRules = rulesRef.get();
+        for (Rule rule : currentRules) {
             RuleResult ruleResult = rule.execute(queryAttributes);
             if (ruleResult.getStatus() == RuleResult.Status.EQUAL) {
                 if (possibleResults.get(0).getRuleWeight() <= ruleResult.getRuleWeight()) {
@@ -39,7 +75,7 @@ public class RuleEngine {
                 throw new MultiplyRulesFound("Multiply rules found.", multiplyRulesFound);
             }
         } else if (notEqualResult.equals(possibleResults.get(0))) {
-            throw new NoRulesFound();
+            return null;
         }
 
         return possibleResults.get(0).getResultValue();
@@ -53,16 +89,18 @@ public class RuleEngine {
         // BrandId:Avaya#CountryId:Germany#RcAccountId:332211=Avaya_Germany_1
 
         RuleEngine ruleEngine = new RuleEngine();
-        ruleEngine.addRule("BrandId:Avaya#CountryId:Germany=Avaya_Germany_1");
-        ruleEngine.addRule("BrandId:Avaya=Avaya_Others_default");
-        ruleEngine.addRule("BrandId:Avaya#CountryId:US#RcAccountId:12345=Avaya_US_1");
-        ruleEngine.addRule("BrandId:Avaya#CountryId:US=Avaya_US_default");
-        ruleEngine.addRule("CountryId:Germany=Germany_default");
-        ruleEngine.addRule("RcAccountId:112233=Avaya_Germany_2");
-        ruleEngine.addRule("RcAccountId:*=US_EAST2");
-        ruleEngine.addRule("Domain:acme.com=US_EAST1");
-        ruleEngine.addRule("Domain:*=US_EAST2");
-        ruleEngine.addRule("Domain:nordigy*=nordigy_instance");
+        Set<String> ruleStrs = new HashSet<>();
+        ruleStrs.add("BrandId:Avaya#CountryId:Germany=Avaya_Germany_1");
+        ruleStrs.add("BrandId:Avaya=Avaya_Others_default");
+        ruleStrs.add("BrandId:Avaya#CountryId:US#RcAccountId:12345=Avaya_US_1");
+        ruleStrs.add("BrandId:Avaya#CountryId:US=Avaya_US_default");
+        ruleStrs.add("CountryId:Germany=Germany_default");
+        ruleStrs.add("RcAccountId:112233=Avaya_Germany_2");
+        ruleStrs.add("RcAccountId:*=US_EAST2");
+        ruleStrs.add("Domain:acme.com=US_EAST1");
+        ruleStrs.add("Domain:*=US_EAST2");
+        ruleStrs.add("Domain:nordigy*=nordigy_instance");
+        ruleEngine.setRules(ruleStrs);
 
         String queryStr;
         String result;

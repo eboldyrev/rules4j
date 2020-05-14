@@ -7,6 +7,11 @@ public class StartsWithRuleAttribute extends BasicRuleAttribute {
     }
 
     @Override
+    public String asString() {
+        return name + divider + value + anyCharsValue;
+    }
+
+    @Override
     public boolean calculate(RuleAttribute other){
         return this.name.equals(other.getName()) && other.getValue().startsWith(this.value);
     }

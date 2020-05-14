@@ -1,11 +1,13 @@
 package com.github.eboldyrev.ruleengine;
 
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
+import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Comparator.naturalOrder;
@@ -14,9 +16,9 @@ public class Rule {
     private static final String divider = "#";
     private static final String equalityDivider="=";
 
-    List<RuleAttribute> attributes;
-    private String result;
-    private long weight;
+    private final List<RuleAttribute> attributes;
+    private final String result;
+    private final long weight;
 
     // todo add rule id -- to easily identify it!
     public Rule(List<RuleAttribute> attributes, String result) {
@@ -26,23 +28,28 @@ public class Rule {
     }
 
     // BrandId:10#CountryId:1#RcAccountId:12345=1
-    public static Rule ruleFromString(String rule){
+    public static Rule ruleFromString(String rule, Function<String, String> valueTransformator){
         String[] ruleAndResult = rule.split(equalityDivider);
-        if ( ruleAndResult.length !=2 ) {
-            throw new IllegalArgumentException("No rule result found: " + rule);
+        if ( ruleAndResult.length != 2 ) {
+            throw new InvalidRuleStructure("No rule result found: " + rule);
         }
 
-        return new Rule(queryFromString(ruleAndResult[0]), ruleAndResult[1]);
+        return new Rule(queryFromString(ruleAndResult[0], valueTransformator), ruleAndResult[1]);
     }
 
     // BrandId:10#CountryId:1#RcAccountId:12345
-    public static List<RuleAttribute> queryFromString(String queryStr){
+    public static List<RuleAttribute> queryFromString(String queryStr, Function<String, String> valueTransformator){
         String[] splittedRule = queryStr.split(divider);
+
+        if (splittedRule.length == 0) {
+            throw new InvalidRuleStructure("No attributes found!");
+        }
+
         Arrays.sort(splittedRule, naturalOrder());
 
         List<RuleAttribute> attributes = new ArrayList<>(splittedRule.length);
         for (String ruleAttrStr : splittedRule) {
-            attributes.add(RuleAttribute.fromString(ruleAttrStr));
+            attributes.add(RuleAttribute.fromString(ruleAttrStr, valueTransformator));
         }
         return attributes;
     }
@@ -85,18 +92,30 @@ public class Rule {
         return unmodifiableList(attributes);
     }
 
+    public String getResult(){
+        return result;
+    }
+
+    public String asString(){
+        String[] attributeDefs = new String[attributes.size()];
+        for (int i=0; i < attributes.size(); i++) {
+            attributeDefs[i] = attributes.get(i).asString();
+        }
+        String attributesStr = String.join(divider, attributeDefs);
+        return String.join(equalityDivider, attributesStr, result);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Rule rule = (Rule) o;
-        return attributes.equals(rule.attributes) &&
-                result.equals(rule.result);
+        return attributes.equals(rule.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(attributes, result);
+        return Objects.hash(attributes);
     }
 
     @Override
