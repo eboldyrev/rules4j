@@ -3,29 +3,28 @@ package com.github.eboldyrev.ruleengine.attributes;
 import java.util.Objects;
 
 public class BasicRuleAttribute implements RuleAttribute {
-    protected final String name;
-    protected final String value;
-    protected final String attributeDefinition;
 
-    public BasicRuleAttribute(String name, String value, String attributeDefinition) {
-        this.name = name;
+    protected final String value;
+    protected final AttributeDefinition definition;
+
+    public BasicRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+        this.definition = attributeDefinition;
         this.value = value;
-        this.attributeDefinition = attributeDefinition;
     }
 
     @Override
-    public String getAttributeDefinition() {
-        return attributeDefinition;
+    public AttributeDefinition getDefinition() {
+        return definition;
     }
 
     @Override
     public String asString() {
-        return name + RuleAttribute.divider + value;
+        return definition.getName() + RuleAttribute.divider + value;
     }
 
     @Override
     public String getName() {
-        return name;
+        return definition.getName();
     }
 
     @Override
@@ -48,16 +47,16 @@ public class BasicRuleAttribute implements RuleAttribute {
         if (this == o) return true;
         if (!(o instanceof RuleAttribute)) return false;
         RuleAttribute that = (RuleAttribute) o;
-        return name.equals(that.getName()) && value.equals(that.getValue());
+        return definition.equals(that.getDefinition()) && value.equals(that.getValue());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, value);
+        return Objects.hash(definition, value);
     }
 
     @Override
     public String toString() {
-        return "name=" + name + " , value=" + value;
+        return "name=" + definition.getName() + " , value=" + value;
     }
 }

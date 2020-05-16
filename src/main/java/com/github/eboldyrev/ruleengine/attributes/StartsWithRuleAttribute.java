@@ -2,18 +2,18 @@ package com.github.eboldyrev.ruleengine.attributes;
 
 public class StartsWithRuleAttribute extends BasicRuleAttribute {
 
-    public StartsWithRuleAttribute(String name, String value, String ruleAttribute) {
-        super(name, value, ruleAttribute);
+    public StartsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+        super(attributeDefinition, value);
     }
 
     @Override
     public String asString() {
-        return name + divider + value + anyCharsValue;
+        return definition.getName() + divider + value + anyCharsValue;
     }
 
     @Override
     public boolean calculate(RuleAttribute other){
-        return this.name.equals(other.getName()) && other.getValue().startsWith(this.value);
+        return this.definition.getName().equals(other.getName()) && other.getValue().startsWith(this.value);
     }
 
     @Override
@@ -24,7 +24,8 @@ public class StartsWithRuleAttribute extends BasicRuleAttribute {
     @Override
     public String toString() {
         return "StartsWithRuleAttribute{" +
-                "ruleAttribute='" + attributeDefinition + '\'' +
+                "attributeDefinition='" + definition + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 }

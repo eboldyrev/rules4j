@@ -3,13 +3,13 @@ package com.github.eboldyrev.ruleengine.attributes;
 public class AnyRuleAttribute extends BasicRuleAttribute {
 
     // for now we can leave it as a string inside - without parsing into name and value
-    public AnyRuleAttribute(String name, String value, String ruleAttribute) {
-        super(name, value, ruleAttribute);
+    public AnyRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+        super(attributeDefinition, value);
     }
 
     @Override
     public boolean calculate(RuleAttribute other){
-        return this.name.equals(other.getName());
+        return this.definition.getName().equals(other.getName());
     }
 
     @Override
@@ -20,7 +20,8 @@ public class AnyRuleAttribute extends BasicRuleAttribute {
     @Override
     public String toString() {
         return "AnyRuleAttribute{" +
-                "ruleAttribute='" + attributeDefinition + '\'' +
+                "attributeDefinition='" + definition + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 }

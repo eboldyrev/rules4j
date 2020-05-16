@@ -2,18 +2,18 @@ package com.github.eboldyrev.ruleengine.attributes;
 
 public class EndsWithRuleAttribute extends BasicRuleAttribute {
 
-    public EndsWithRuleAttribute(String name, String value, String ruleAttribute) {
-        super(name, value, ruleAttribute);
+    public EndsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+        super(attributeDefinition, value);
     }
 
     @Override
     public String asString() {
-        return name + divider + anyCharsValue + value;
+        return definition.getName() + divider + anyCharsValue + value;
     }
 
     @Override
-    public boolean calculate(RuleAttribute other){
-        return this.name.equals(other.getName()) && other.getValue().endsWith(this.value);
+    public boolean calculate(RuleAttribute other) {
+        return this.definition.getName().equals(other.getName()) && other.getValue().endsWith(this.value);
     }
 
     @Override
@@ -24,7 +24,8 @@ public class EndsWithRuleAttribute extends BasicRuleAttribute {
     @Override
     public String toString() {
         return "EndsWithRuleAttribute{" +
-                "attributeDefinition='" + attributeDefinition + '\'' +
+                "attributeDefinition='" + definition + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 }

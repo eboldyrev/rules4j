@@ -4,9 +4,7 @@ import com.github.eboldyrev.ruleengine.exception.MultiplyRulesFound;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -16,13 +14,17 @@ public class RuleEngineTest {
 
     @Before
     public void setUp() {
-        ruleEngine = new RuleEngine();
+        Map<String, Integer> attributeDefinitions = new HashMap<>();
+        attributeDefinitions.put("Brand", 1);
+        attributeDefinitions.put("Country", 1);
+        attributeDefinitions.put("OldClient", 1);
+        ruleEngine = new RuleEngine(attributeDefinitions, null, null);
     }
 
     @Test
     public void query__3ExactMatchAttributesRule_queryWithSameValuesAsInRule__ruleFound() {
         // setup
-        ruleEngine.setRules(Collections.singleton("Brand:Puma#Country:Russia#OldClient:Yes=15%"));
+        ruleEngine.setRules(Collections.singletonList("Brand:Puma#Country:Russia#OldClient:Yes=15%"));
 
         // act
         String result = ruleEngine.query("Brand:Puma#Country:Russia#OldClient:Yes");
@@ -34,7 +36,7 @@ public class RuleEngineTest {
     @Test
     public void query__2ExactMatchAttributesRule_queryWith2SameValuesAsInRuleAndOneExtraAttribute__ruleFound() {
         // setup
-        ruleEngine.setRules(Collections.singleton(("Brand:Puma#Country:Russia=5%")));
+        ruleEngine.setRules(Collections.singletonList(("Brand:Puma#Country:Russia=5%")));
 
         // act
         String result = ruleEngine.query("Brand:Puma#Country:Russia#OldClient:Yes");
@@ -46,7 +48,7 @@ public class RuleEngineTest {
     @Test
     public void query__3RulesWithExactMatchAttributesRule_queryWith2SameValuesAsInRuleAndOneExtraAttribute__ruleFound() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Brand:Puma#Country:Russia#OldClient:Yes=10%");
         rulesStrs.add("Brand:Puma#Country:Russia=5%");
         rulesStrs.add("Brand:Puma=3%");
@@ -62,7 +64,7 @@ public class RuleEngineTest {
     @Test
     public void query__3RulesWithExactMatchAttributesRule_queryWith2SameValuesAsInRuleAnd1DifferentValue__ruleFound() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Brand:Puma#Country:Russia#OldClient:Yes=10%");
         rulesStrs.add("Brand:Puma#Country:Russia=5%");
         rulesStrs.add("Brand:Puma=3%");
@@ -78,7 +80,7 @@ public class RuleEngineTest {
     @Test
     public void query__3RulesWithExactMatchAttributesRule_queryWith1SameValuesAsInRuleAnd2DifferentValues__ruleFound() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Brand:Puma#Country:Russia#OldClient:Yes=10%");
         rulesStrs.add("Brand:Puma#Country:Russia=5%");
         rulesStrs.add("OldClient:Yes=2%");
@@ -94,7 +96,7 @@ public class RuleEngineTest {
     @Test
     public void query__2RulesWithExactMatchAttributesAnd1WithAnyMatchRule_queryWith3DifferentValues__ruleFound() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Brand:Puma#Country:Russia#OldClient:Yes=10%");
         rulesStrs.add("Brand:Puma#Country:Russia=5%");
         rulesStrs.add("Country:*=0.5%");
@@ -110,7 +112,7 @@ public class RuleEngineTest {
     @Test
     public void query__1RuleWithEndsWithMatchAnd1WithAnyMatchRule_querySuitsBothRules__ruleWithGreaterWeightChosen() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Country:*ussia=5%");
         rulesStrs.add("Country:*=0.5%");
         ruleEngine.setRules(rulesStrs);
@@ -125,7 +127,7 @@ public class RuleEngineTest {
     @Test
     public void query__1RulesWithExactMatchAttributesAnd1WithAnyMatchRule_queryWith3DifferentValues__ruleFound() {
         // setup
-        ruleEngine.setRules(Collections.singleton("Brand:Pu*#Country:Russia#OldClient:Yes=10%"));
+        ruleEngine.setRules(Collections.singletonList("Brand:Pu*#Country:Russia#OldClient:Yes=10%"));
 
         // act
         String result = ruleEngine.query("Brand:Puma#Country:Russia#OldClient:Yes");
@@ -137,14 +139,14 @@ public class RuleEngineTest {
     @Test
     public void query__2RulesWithAnyMatchAndSameWeight_querySuitsBothRules__multiplyRulesFoundException() {
         // setup
-        Set<String> rulesStrs = new HashSet<>();
+        List<String> rulesStrs = new ArrayList<>();
         rulesStrs.add("Brand:*=1%");
         rulesStrs.add("Country:*=1.5%");
         ruleEngine.setRules(rulesStrs);
 
         // act
         try {
-            String result = ruleEngine.query("Brand:Adidas#Country:Belorussia");
+            ruleEngine.query("Brand:Adidas#Country:Belorussia");
             fail("Should throw MultiplyRulesFound exception");
         } catch (MultiplyRulesFound e) {
             // verify
@@ -155,7 +157,7 @@ public class RuleEngineTest {
     @Test
     public void query__1Rule_queryDoesntSuitsTheRule__returnNull() {
         // setup
-        ruleEngine.setRules(Collections.singleton("Brand:Pu*#Country:Russia#OldClient:Yes=10%"));
+        ruleEngine.setRules(Collections.singletonList("Brand:Pu*#Country:Russia#OldClient:Yes=10%"));
 
         // act
         String result = ruleEngine.query("Brand:Adidas#Country:Belorussia");

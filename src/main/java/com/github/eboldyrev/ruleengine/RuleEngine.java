@@ -1,5 +1,6 @@
 package com.github.eboldyrev.ruleengine;
 
+import com.github.eboldyrev.ruleengine.attributes.AttributeDefinition;
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 import com.github.eboldyrev.ruleengine.exception.MultiplyRulesFound;
@@ -9,23 +10,36 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.github.eboldyrev.ruleengine.utils.Utils.nonEmpty;
+
 public class RuleEngine {
 
-    private AtomicReference<List<Rule>> rulesRef = new AtomicReference<>(new ArrayList<>());
-    private Function<String, String> valueTransformator = null;
+    private final AtomicReference<List<Rule>> rulesRef = new AtomicReference<>(new ArrayList<>());
+    private final Function<String, String> nameTransformator;
+    private final Function<String, String> valueTransformator;
+    private final Map<String, AttributeDefinition> attributeDefinitions;
 
-    public RuleEngine() {
-    }
-
-    public RuleEngine(Function<String, String> valueTransformator) {
+    public RuleEngine(Map<String, Integer> attributeDefinitions,
+                      Function<String, String> nameTransformator,
+                      Function<String, String> valueTransformator) {
+        nonEmpty(attributeDefinitions);
+        this.attributeDefinitions = new HashMap<>((int)(attributeDefinitions.size() / 0.75));
+        this.nameTransformator = nameTransformator;
         this.valueTransformator = valueTransformator;
+
+        for (Map.Entry<String, Integer> definition : attributeDefinitions.entrySet()) {
+            String key = nameTransformator != null ? nameTransformator.apply(definition.getKey()) : definition.getKey();
+            this.attributeDefinitions.put(key, new AttributeDefinition(key, definition.getValue()));
+        }
     }
 
     public Rule parseRule(String ruleStr){
-        return Rule.ruleFromString(ruleStr, valueTransformator);
+        return Rule.ruleFromString(ruleStr, attributeDefinitions, nameTransformator, valueTransformator);
     }
 
-    public List<Rule> parseRules(Set<String> ruleStrs) throws InvalidRuleStructure {
+    // TODO support Collection as argument ??
+    // TODO return Set ??
+    public List<Rule> parseRules(List<String> ruleStrs) throws InvalidRuleStructure {
         List<Rule> rules = new ArrayList<>(ruleStrs.size());
         for (String ruleStr : ruleStrs) {
             Rule rule = parseRule(ruleStr);
@@ -34,7 +48,7 @@ public class RuleEngine {
         return rules;
     }
 
-    public void setRules(Set<String> ruleStrs){
+    public void setRules(List<String> ruleStrs){
         rulesRef.set(parseRules(ruleStrs));
     }
 
@@ -52,7 +66,7 @@ public class RuleEngine {
     }
 
     public String query(String queryAttrs){
-        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs, valueTransformator);
+        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs, attributeDefinitions, nameTransformator, valueTransformator);
 
         List<RuleResult> possibleResults = new ArrayList<>();
         RuleResult notEqualResult = RuleResult.notEqual(null);
@@ -79,71 +93,6 @@ public class RuleEngine {
         }
 
         return possibleResults.get(0).getResultValue();
-    }
-
-    public static void main(String[] args) {
-        // sorted attr list
-        // BrandId:Avaya#CountryId:US#RcAccountId:12345=Avaya_US_1
-        // BrandId:Avaya#CountryId:US=Avaya_US_default
-        // BrandId:Avaya#CountryId:Germany=Avaya_Germany_default
-        // BrandId:Avaya#CountryId:Germany#RcAccountId:332211=Avaya_Germany_1
-
-        RuleEngine ruleEngine = new RuleEngine();
-        Set<String> ruleStrs = new HashSet<>();
-        ruleStrs.add("BrandId:Avaya#CountryId:Germany=Avaya_Germany_1");
-        ruleStrs.add("BrandId:Avaya=Avaya_Others_default");
-        ruleStrs.add("BrandId:Avaya#CountryId:US#RcAccountId:12345=Avaya_US_1");
-        ruleStrs.add("BrandId:Avaya#CountryId:US=Avaya_US_default");
-        ruleStrs.add("CountryId:Germany=Germany_default");
-        ruleStrs.add("RcAccountId:112233=Avaya_Germany_2");
-        ruleStrs.add("RcAccountId:*=US_EAST2");
-        ruleStrs.add("Domain:acme.com=US_EAST1");
-        ruleStrs.add("Domain:*=US_EAST2");
-        ruleStrs.add("Domain:nordigy*=nordigy_instance");
-        ruleEngine.setRules(ruleStrs);
-
-        String queryStr;
-        String result;
-
-//        queryStr = "BrandId:Avaya#CountryId:Germany#RcAccountId:222222";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "BrandId:Megafon#CountryId:Russia#RcAccountId:1111";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-
-        queryStr = "Domain:nordigy1.com#RcAccountId:1111";
-        result = ruleEngine.query(queryStr);
-        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "BrandId:Avaya#CountryId:US#RcAccountId:123";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "BrandId:Avaya#CountryId:Russia#RcAccountId:12";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "BrandId:Avaya#CountryId:Germany#RcAccountId:33";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "Domain:yandex.ru";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-//
-//        queryStr = "RcAccountId:1";
-//        result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-
-//        String queryStr = "BrandId:hui#CountryId:Germany#RcAccountId:1";
-//        String result = ruleEngine.query(queryStr);
-//        System.out.println("Query: " + queryStr + " -> " + result);
-
-        queryStr = "BrandId:hui#CountryId:Germany#Tier:1";
-        result = ruleEngine.query(queryStr);
-        System.out.println("Query: " + queryStr + " -> " + result);
     }
 
 }
