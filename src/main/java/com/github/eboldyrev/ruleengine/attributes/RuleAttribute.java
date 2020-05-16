@@ -17,7 +17,6 @@ public interface RuleAttribute {
 
     boolean calculate(RuleAttribute ruleAttribute);
 
-    //?
     AttributeDefinition getDefinition();
 
     String asString();
@@ -28,7 +27,6 @@ public interface RuleAttribute {
 
     int getWeight();
 
-    // BrandId:10
     static RuleAttribute fromString(String ruleAttr, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, Function<String, String> valueTransformator){
         int idx = validateRuleAttribute(ruleAttr);
 
