@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.function.Function;
 
 public interface RuleAttribute {
+    int EXACT_MATCH_COEFFICIENT = 3;
+    int PARTIAL_MATCH_COEFFICIENT = 1;
+    int ANY_MATCH_COEFFICIENT = 0;
+
     char divider = ':';
     char anyValue = '*';
     String anyCharsValue = "*";

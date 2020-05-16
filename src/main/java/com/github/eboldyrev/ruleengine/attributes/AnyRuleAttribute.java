@@ -14,7 +14,7 @@ public class AnyRuleAttribute extends BasicRuleAttribute {
 
     @Override
     public int getWeight() {
-        return (int) Math.pow(weightBase, 0);
+        return (int) Math.pow(weightBase, ANY_MATCH_COEFFICIENT);
     }
 
     @Override

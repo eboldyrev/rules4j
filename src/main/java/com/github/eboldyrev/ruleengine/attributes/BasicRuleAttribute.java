@@ -34,7 +34,7 @@ public class BasicRuleAttribute implements RuleAttribute {
 
     @Override
     public int getWeight() {
-        return (int) Math.pow(weightBase, 3);
+        return (int) Math.pow(weightBase, EXACT_MATCH_COEFFICIENT + definition.getWeight());
     }
 
     @Override

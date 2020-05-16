@@ -18,7 +18,7 @@ public class EndsWithRuleAttribute extends BasicRuleAttribute {
 
     @Override
     public int getWeight() {
-        return (int) Math.pow(weightBase, 1);
+        return (int) Math.pow(weightBase, PARTIAL_MATCH_COEFFICIENT + definition.getWeight());
     }
 
     @Override
