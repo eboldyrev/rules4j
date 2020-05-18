@@ -11,30 +11,32 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.github.eboldyrev.ruleengine.utils.Utils.nonEmpty;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 public class RuleEngine {
 
-    private final AtomicReference<List<Rule>> rulesRef = new AtomicReference<>(new ArrayList<>());
+    private final AtomicReference<Metadata> metadataRef = new AtomicReference<>(Metadata.EMPTY_METADATA);
     private final Function<String, String> nameTransformator;
     private final Function<String, String> valueTransformator;
-    private final Map<String, AttributeDefinition> attributeDefinitions;
 
-    public RuleEngine(Map<String, Integer> attributeDefinitions,
-                      Function<String, String> nameTransformator,
+    public RuleEngine(Function<String, String> nameTransformator,
                       Function<String, String> valueTransformator) {
-        nonEmpty(attributeDefinitions);
-        this.attributeDefinitions = new HashMap<>((int)(attributeDefinitions.size() / 0.75));
         this.nameTransformator = nameTransformator;
         this.valueTransformator = valueTransformator;
+    }
 
-        for (Map.Entry<String, Integer> definition : attributeDefinitions.entrySet()) {
+    public Map<String, AttributeDefinition> createAttributeDefinitions(Map<String, Integer> attrDefs) {
+        Map<String, AttributeDefinition> attributeDefinitions = new HashMap<>((int)(attrDefs.size() / 0.75));
+        for (Map.Entry<String, Integer> definition : attrDefs.entrySet()) {
             String key = nameTransformator != null ? nameTransformator.apply(definition.getKey()) : definition.getKey();
-            this.attributeDefinitions.put(key, new AttributeDefinition(key, definition.getValue()));
+            attributeDefinitions.put(key, new AttributeDefinition(key, definition.getValue()));
         }
+        return attributeDefinitions;
     }
 
     public Rule parseRule(String ruleStr){
-        return Rule.ruleFromString(ruleStr, attributeDefinitions, nameTransformator, valueTransformator);
+        return Rule.ruleFromString(ruleStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
     }
 
     // TODO support Collection as argument ??
@@ -49,15 +51,28 @@ public class RuleEngine {
     }
 
     public void setRules(List<String> ruleStrs){
-        rulesRef.set(parseRules(ruleStrs));
+        nonEmpty(ruleStrs);
+        List<Rule> rules = parseRules(ruleStrs);
+        metadataRef.set(new Metadata(metadataRef.get().attributeDefinitions, rules));
+    }
+
+    public void setAttributesDefinitions(Map<String, Integer> attrDefs) {
+        nonEmpty(attrDefs);
+        Map<String, AttributeDefinition> attributeDefinitions = createAttributeDefinitions(attrDefs);
+        metadataRef.set(new Metadata(attributeDefinitions, metadataRef.get().rules));
+    }
+
+    public void setRulesAndAttributeDefinitions(Map<String, Integer> attrDefs, List<String> ruleStrs) {
+        setAttributesDefinitions(attrDefs);
+        setRules(ruleStrs);
     }
 
     public List<Rule> getRules(){
-        return Collections.unmodifiableList(rulesRef.get());
+        return Collections.unmodifiableList(metadataRef.get().rules);
     }
 
     public Set<String> getRulesAsStrings(){
-        List<Rule> rules = rulesRef.get();
+        List<Rule> rules = metadataRef.get().getRules();
         Set<String> result = new HashSet<>(rules.size());
         for (Rule rule : rules) {
             result.add(rule.asString());
@@ -66,12 +81,12 @@ public class RuleEngine {
     }
 
     public String query(String queryAttrs){
-        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs, attributeDefinitions, nameTransformator, valueTransformator);
+        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrs, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
 
         List<RuleResult> possibleResults = new ArrayList<>();
         RuleResult notEqualResult = RuleResult.notEqual(null);
         possibleResults.add(notEqualResult);
-        List<Rule> currentRules = rulesRef.get();
+        List<Rule> currentRules = metadataRef.get().rules;
         for (Rule rule : currentRules) {
             RuleResult ruleResult = rule.execute(queryAttributes);
             if (ruleResult.getStatus() == RuleResult.Status.EQUAL) {
@@ -93,6 +108,26 @@ public class RuleEngine {
         }
 
         return possibleResults.get(0).getResultValue();
+    }
+
+    static class Metadata {
+        static final Metadata EMPTY_METADATA = new Metadata(emptyMap(), emptyList());
+
+        private final Map<String, AttributeDefinition> attributeDefinitions;
+        private final List<Rule> rules;
+
+        Metadata(Map<String, AttributeDefinition> attributeDefinitions, List<Rule> rules) {
+            this.attributeDefinitions = attributeDefinitions;
+            this.rules = rules;
+        }
+
+        Map<String, AttributeDefinition> getAttributeDefinitions() {
+            return attributeDefinitions;
+        }
+
+        List<Rule> getRules() {
+            return rules;
+        }
     }
 
 }
