@@ -1,4 +1,4 @@
-package com.github.eboldyrev.ruleengine.attributes;
+package com.github.eboldyrev.ruleengine;
 
 import java.util.Objects;
 
@@ -6,7 +6,7 @@ public class AttributeDefinition {
     private final String name;
     private final int weight;
 
-    public AttributeDefinition(String name, int weight) {
+    AttributeDefinition(String name, int weight) {
         this.name = name;
         this.weight = weight;
     }

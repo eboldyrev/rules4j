@@ -1,5 +1,6 @@
 package com.github.eboldyrev.ruleengine.attributes;
 
+import com.github.eboldyrev.ruleengine.AttributeDefinition;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 
 import java.util.Map;
@@ -27,26 +28,35 @@ public interface RuleAttribute {
 
     int getWeight();
 
-    static RuleAttribute fromString(String ruleAttr, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, Function<String, String> valueTransformator){
+    static RuleAttribute fromString(String ruleAttr,
+                                    Map<String, AttributeDefinition> attributeDefinitions,
+                                    Function<String, String> nameTransformator,
+                                    Function<String, String> valueTransformator,
+                                    Function<String, AttributeDefinition> unknownAttributePolicy){
         int idx = validateRuleAttribute(ruleAttr);
 
-        AttributeDefinition attributeDefinition = validateAndGetName(ruleAttr, attributeDefinitions, nameTransformator, idx);
+        AttributeDefinition attributeDefinition = validateAndGetName(ruleAttr, attributeDefinitions, nameTransformator,
+                idx, unknownAttributePolicy);
 
-        String value = validateAndGetValue(ruleAttr, valueTransformator, idx);
+        if (attributeDefinition != null) {
+            String value = validateAndGetValue(ruleAttr, valueTransformator, idx);
 
-        if (value.length() == 1 && value.charAt(0) == anyValue) {
-            return new AnyRuleAttribute(attributeDefinition, value);
+            if (value.length() == 1 && value.charAt(0) == anyValue) {
+                return new AnyRuleAttribute(attributeDefinition, value);
+            }
+
+            if (value.endsWith(anyCharsValue)) {
+                return new StartsWithRuleAttribute(attributeDefinition, value.substring(0, value.length() - 1));
+            }
+
+            if (value.startsWith(anyCharsValue)) {
+                return new EndsWithRuleAttribute(attributeDefinition, value.substring(1));
+            }
+
+            return new BasicRuleAttribute(attributeDefinition, value);
         }
 
-        if (value.endsWith(anyCharsValue)) {
-            return new StartsWithRuleAttribute(attributeDefinition, value.substring(0, value.length()-1));
-        }
-
-        if (value.startsWith(anyCharsValue)) {
-            return new EndsWithRuleAttribute(attributeDefinition, value.substring(1));
-        }
-
-        return new BasicRuleAttribute(attributeDefinition, value);
+        return null;
     }
 
     static String validateAndGetValue(String ruleAttr, Function<String, String> valueTransformator, int idx) {
@@ -60,7 +70,11 @@ public interface RuleAttribute {
         return value;
     }
 
-    static AttributeDefinition validateAndGetName(String ruleAttr, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, int idx) {
+    static AttributeDefinition validateAndGetName(String ruleAttr,
+                                                  Map<String, AttributeDefinition> attributeDefinitions,
+                                                  Function<String, String> nameTransformator,
+                                                  int idx,
+                                                  Function<String, AttributeDefinition> unknownAttributePolicy) {
         String name = ruleAttr.substring(0, idx);
         if (name.length() == 0) {
             throw new InvalidRuleStructure("Empty name: " + ruleAttr);
@@ -71,7 +85,7 @@ public interface RuleAttribute {
 
         AttributeDefinition attributeDefinition = attributeDefinitions.get(name);
         if (attributeDefinition ==  null) {
-            throw new InvalidRuleStructure("Unknown rule attribute: " + name);
+            attributeDefinition = unknownAttributePolicy.apply(name);
         }
         return attributeDefinition;
     }

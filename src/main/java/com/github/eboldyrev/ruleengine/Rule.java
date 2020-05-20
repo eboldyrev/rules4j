@@ -1,16 +1,17 @@
 package com.github.eboldyrev.ruleengine;
 
-import com.github.eboldyrev.ruleengine.attributes.AttributeDefinition;
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Comparator.naturalOrder;
 
 public class Rule {
+    private static final String nameValueDivider = ":";
     private static final String divider = "#";
     private static final String equalityDivider="=";
 
@@ -27,18 +28,37 @@ public class Rule {
         this.result = result;
     }
 
-    // BrandId:10#CountryId:1#RcAccountId:12345=1
     public static Rule ruleFromString(String rule, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, Function<String, String> valueTransformator){
         String[] ruleAndResult = rule.split(equalityDivider);
         if ( ruleAndResult.length != 2 ) {
             throw new InvalidRuleStructure("No rule result found: " + rule);
         }
 
-        return new Rule(null, queryFromString(ruleAndResult[0], attributeDefinitions, nameTransformator, valueTransformator), ruleAndResult[1]);
+        return new Rule(null, ruleAttributesFromString(ruleAndResult[0], attributeDefinitions, nameTransformator, valueTransformator), ruleAndResult[1]);
     }
 
-    // BrandId:10#CountryId:1#RcAccountId:12345
-    public static List<RuleAttribute> queryFromString(String queryStr, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, Function<String, String> valueTransformator){
+    // name1:10#name2:1#name3:12345
+    public static List<RuleAttribute> ruleAttributesFromString(String ruleStr,
+                                                               Map<String, AttributeDefinition> attributeDefinitions,
+                                                               Function<String, String> nameTransformator,
+                                                               Function<String, String> valueTransformator){
+        return queryFromString(ruleStr, attributeDefinitions, nameTransformator, valueTransformator,
+                name -> { throw new InvalidRuleStructure("Unknown rule attribute: " + name );} );
+    }
+
+    public static List<RuleAttribute> queryFromString(String queryStr,
+                                                      Map<String, AttributeDefinition> attributeDefinitions,
+                                                      Function<String, String> nameTransformator,
+                                                      Function<String, String> valueTransformator){
+        return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator,
+                name -> null );
+    }
+
+    private static List<RuleAttribute> queryFromString(String queryStr,
+                                                      Map<String, AttributeDefinition> attributeDefinitions,
+                                                      Function<String, String> nameTransformator,
+                                                      Function<String, String> valueTransformator,
+                                                      Function<String, AttributeDefinition> unknownAttributePolicy){
         String[] splittedRule = queryStr.split(divider);
 
         if (splittedRule.length == 0) {
@@ -49,9 +69,23 @@ public class Rule {
 
         List<RuleAttribute> attributes = new ArrayList<>(splittedRule.length);
         for (String ruleAttrStr : splittedRule) {
-            attributes.add(RuleAttribute.fromString(ruleAttrStr, attributeDefinitions, nameTransformator, valueTransformator));
+            RuleAttribute ruleAttribute = RuleAttribute.fromString(ruleAttrStr, attributeDefinitions,
+                    nameTransformator, valueTransformator, unknownAttributePolicy);
+            if (ruleAttribute != null) {
+                attributes.add(ruleAttribute);
+            }
         }
         return attributes;
+    }
+
+    public static List<RuleAttribute> queryFromMap(Map<String, String> queryAttrs,
+                                                   Map<String, AttributeDefinition> attributeDefinitions,
+                                                   Function<String, String> nameTransformator,
+                                                   Function<String, String> valueTransformator) {
+        String queryStr = queryAttrs.entrySet().stream()
+                .map(e -> e.getKey() + nameValueDivider + e.getValue())
+                .collect(Collectors.joining(divider));
+        return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator);
     }
 
     public RuleResult execute(List<RuleAttribute> queryAttributes){

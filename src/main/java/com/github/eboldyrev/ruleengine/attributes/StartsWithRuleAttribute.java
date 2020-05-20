@@ -1,8 +1,10 @@
 package com.github.eboldyrev.ruleengine.attributes;
 
+import com.github.eboldyrev.ruleengine.AttributeDefinition;
+
 public class StartsWithRuleAttribute extends BasicRuleAttribute {
 
-    public StartsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+    StartsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
         super(attributeDefinition, value);
     }
 

@@ -1,5 +1,7 @@
 package com.github.eboldyrev.ruleengine.attributes;
 
+import com.github.eboldyrev.ruleengine.AttributeDefinition;
+
 import java.util.Objects;
 
 public class BasicRuleAttribute implements RuleAttribute {
@@ -7,7 +9,7 @@ public class BasicRuleAttribute implements RuleAttribute {
     protected final String value;
     protected final AttributeDefinition definition;
 
-    public BasicRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+    BasicRuleAttribute(AttributeDefinition attributeDefinition, String value) {
         this.definition = attributeDefinition;
         this.value = value;
     }

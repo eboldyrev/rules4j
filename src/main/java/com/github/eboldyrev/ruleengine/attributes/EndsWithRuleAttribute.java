@@ -1,8 +1,10 @@
 package com.github.eboldyrev.ruleengine.attributes;
 
+import com.github.eboldyrev.ruleengine.AttributeDefinition;
+
 public class EndsWithRuleAttribute extends BasicRuleAttribute {
 
-    public EndsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+    EndsWithRuleAttribute(AttributeDefinition attributeDefinition, String value) {
         super(attributeDefinition, value);
     }
 

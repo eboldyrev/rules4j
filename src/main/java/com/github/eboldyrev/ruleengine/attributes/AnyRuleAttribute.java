@@ -1,9 +1,11 @@
 package com.github.eboldyrev.ruleengine.attributes;
 
+import com.github.eboldyrev.ruleengine.AttributeDefinition;
+
 public class AnyRuleAttribute extends BasicRuleAttribute {
 
     // for now we can leave it as a string inside - without parsing into name and value
-    public AnyRuleAttribute(AttributeDefinition attributeDefinition, String value) {
+    AnyRuleAttribute(AttributeDefinition attributeDefinition, String value) {
         super(attributeDefinition, value);
     }
 
