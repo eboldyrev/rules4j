@@ -34,7 +34,7 @@ public class RuleEngine {
         return attributeDefinitions;
     }
 
-    public Rule parseRule(String ruleStr) {
+    public Rule parseRule(String ruleStr) throws InvalidRuleStructure {
         return Rule.ruleFromString(ruleStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
     }
 
@@ -85,12 +85,12 @@ public class RuleEngine {
         return result;
     }
 
-    public String query(Map<String, String> queryAttrs) {
+    public String query(Map<String, String> queryAttrs) throws InvalidRuleStructure {
         List<RuleAttribute> queryAttributes = Rule.queryFromMap(queryAttrs, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
         return query(queryAttributes);
     }
 
-    public String query(String queryAttrsStr) {
+    public String query(String queryAttrsStr) throws InvalidRuleStructure {
         List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrsStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
         return query(queryAttributes);
     }

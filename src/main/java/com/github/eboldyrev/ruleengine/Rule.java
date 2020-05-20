@@ -21,14 +21,17 @@ public class Rule {
     private final long weight;
 
     // todo add rule id -- to easily identify it!
-    public Rule(String ruleId, List<RuleAttribute> attributes, String result) {
+    Rule(String ruleId, List<RuleAttribute> attributes, String result) {
         this.id = ruleId;
         this.attributes = attributes;
         this.weight = attributes.stream().map(RuleAttribute::getWeight).reduce(0, Integer::sum);
         this.result = result;
     }
 
-    public static Rule ruleFromString(String rule, Map<String, AttributeDefinition> attributeDefinitions, Function<String, String> nameTransformator, Function<String, String> valueTransformator){
+    static Rule ruleFromString(String rule,
+                                      Map<String, AttributeDefinition> attributeDefinitions,
+                                      Function<String, String> nameTransformator,
+                                      Function<String, String> valueTransformator) {
         String[] ruleAndResult = rule.split(equalityDivider);
         if ( ruleAndResult.length != 2 ) {
             throw new InvalidRuleStructure("No rule result found: " + rule);
@@ -38,18 +41,18 @@ public class Rule {
     }
 
     // name1:10#name2:1#name3:12345
-    public static List<RuleAttribute> ruleAttributesFromString(String ruleStr,
+    static List<RuleAttribute> ruleAttributesFromString(String ruleStr,
                                                                Map<String, AttributeDefinition> attributeDefinitions,
                                                                Function<String, String> nameTransformator,
-                                                               Function<String, String> valueTransformator){
+                                                               Function<String, String> valueTransformator) {
         return queryFromString(ruleStr, attributeDefinitions, nameTransformator, valueTransformator,
                 name -> { throw new InvalidRuleStructure("Unknown rule attribute: " + name );} );
     }
 
-    public static List<RuleAttribute> queryFromString(String queryStr,
+    static List<RuleAttribute> queryFromString(String queryStr,
                                                       Map<String, AttributeDefinition> attributeDefinitions,
                                                       Function<String, String> nameTransformator,
-                                                      Function<String, String> valueTransformator){
+                                                      Function<String, String> valueTransformator) throws InvalidRuleStructure{
         return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator,
                 name -> null );
     }
@@ -58,7 +61,7 @@ public class Rule {
                                                       Map<String, AttributeDefinition> attributeDefinitions,
                                                       Function<String, String> nameTransformator,
                                                       Function<String, String> valueTransformator,
-                                                      Function<String, AttributeDefinition> unknownAttributePolicy){
+                                                      Function<String, AttributeDefinition> unknownAttributePolicy) {
         String[] splittedRule = queryStr.split(divider);
 
         if (splittedRule.length == 0) {
@@ -78,17 +81,17 @@ public class Rule {
         return attributes;
     }
 
-    public static List<RuleAttribute> queryFromMap(Map<String, String> queryAttrs,
+    static List<RuleAttribute> queryFromMap(Map<String, String> queryAttrs,
                                                    Map<String, AttributeDefinition> attributeDefinitions,
                                                    Function<String, String> nameTransformator,
-                                                   Function<String, String> valueTransformator) {
+                                                   Function<String, String> valueTransformator) throws InvalidRuleStructure {
         String queryStr = queryAttrs.entrySet().stream()
                 .map(e -> e.getKey() + nameValueDivider + e.getValue())
                 .collect(Collectors.joining(divider));
         return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator);
     }
 
-    public RuleResult execute(List<RuleAttribute> queryAttributes){
+    RuleResult execute(List<RuleAttribute> queryAttributes){
         if (this.attributes.size() > queryAttributes.size()){
             return RuleResult.notApplicable(this);
         }

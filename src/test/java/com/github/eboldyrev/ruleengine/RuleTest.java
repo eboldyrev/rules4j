@@ -90,4 +90,40 @@ public class RuleTest {
         List<String> actualNames = ruleAttributes.stream().map(RuleAttribute::getName).collect(Collectors.toList());
         assertEquals(Arrays.asList("brand", "country"), actualNames);
     }
+
+    @Test
+    public void queryFromMap__emptyNameEmptyValue__throwInvalidRuleStructure() {
+        RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
+        Map<String, Integer> attributesWithWeight = new HashMap<>();
+        attributesWithWeight.put("Brand", 1);
+        attributesWithWeight.put("Country", 1);
+        Map<String, AttributeDefinition> attributeDefinitions = ruleEngine.createAttributeDefinitions(attributesWithWeight);
+
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("", "");
+        try {
+            Rule.queryFromMap(queryMap, attributeDefinitions, String::toLowerCase, String::toLowerCase);
+            fail("Should throw InvalidRuleStructure");
+        } catch (InvalidRuleStructure e) {
+            assertEquals("Empty name: :", e.getMessage());
+        }
+    }
+
+    @Test
+    public void queryFromMap__emptyValue__throwInvalidRuleStructure() {
+        RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
+        Map<String, Integer> attributesWithWeight = new HashMap<>();
+        attributesWithWeight.put("Brand", 1);
+        attributesWithWeight.put("Country", 1);
+        Map<String, AttributeDefinition> attributeDefinitions = ruleEngine.createAttributeDefinitions(attributesWithWeight);
+
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("Brand", "");
+        try {
+            Rule.queryFromMap(queryMap, attributeDefinitions, String::toLowerCase, String::toLowerCase);
+            fail("Should throw InvalidRuleStructure");
+        } catch (InvalidRuleStructure e) {
+            assertEquals("Empty value: Brand:", e.getMessage());
+        }
+    }
 }
