@@ -60,4 +60,14 @@ public class RuleResult {
     public int hashCode() {
         return Objects.hash(ruleWeight, resultValue, rule, status);
     }
+
+    @Override
+    public String toString() {
+        return "RuleResult{" +
+                "status=" + status +
+                ", resultValue='" + resultValue + '\'' +
+                ", ruleWeight=" + ruleWeight +
+                ", rule=" + rule +
+                '}';
+    }
 }

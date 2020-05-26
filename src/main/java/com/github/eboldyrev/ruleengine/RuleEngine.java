@@ -34,24 +34,24 @@ public class RuleEngine {
         return attributeDefinitions;
     }
 
-    public Rule parseRule(String ruleStr) throws InvalidRuleStructure {
-        return Rule.ruleFromString(ruleStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
+    public Rule parseRule(String id, String ruleStr) throws InvalidRuleStructure {
+        return Rule.ruleFromString(id, ruleStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
     }
 
     // TODO support Collection as argument ??
     // TODO return Set ??
-    public List<Rule> parseRules(List<String> ruleStrs) throws InvalidRuleStructure {
-        List<Rule> rules = new ArrayList<>(ruleStrs.size());
-        for (String ruleStr : ruleStrs) {
-            Rule rule = parseRule(ruleStr);
+    public List<Rule> parseRules(Map<String, String> idRuleMap) throws InvalidRuleStructure {
+        List<Rule> rules = new ArrayList<>(idRuleMap.size());
+        for (Map.Entry<String, String> entry : idRuleMap.entrySet()) {
+            Rule rule = parseRule(entry.getKey(), entry.getValue());
             rules.add(rule);
         }
         return rules;
     }
 
-    public void setRules(List<String> ruleStrs) {
-        requireNonNull(ruleStrs);
-        List<Rule> rules = parseRules(ruleStrs);
+    public void setRules(Map<String, String> idRuleMap) {
+        requireNonNull(idRuleMap);
+        List<Rule> rules = parseRules(idRuleMap);
         metadataRef.set(new Metadata(metadataRef.get().attributeDefinitions, rules));
     }
 
@@ -61,9 +61,9 @@ public class RuleEngine {
         metadataRef.set(new Metadata(attributeDefinitions, metadataRef.get().rules));
     }
 
-    public void setRulesAndAttributeDefinitions(Map<String, Integer> attrDefs, List<String> ruleStrs) {
+    public void setRulesAndAttributeDefinitions(Map<String, Integer> attrDefs, Map<String, String> idRuleMap) {
         setAttributesDefinitions(attrDefs);
-        setRules(ruleStrs);
+        setRules(idRuleMap);
     }
 
     public List<Rule> getRules() {
@@ -76,11 +76,11 @@ public class RuleEngine {
                 .collect(Collectors.toMap(e-> e.getKey(), e-> e.getValue().getWeight()));
     }
 
-    public Set<String> getRulesAsStrings() {
+    public Map<String, String> getRulesAsStrings() {
         List<Rule> rules = metadataRef.get().getRules();
-        Set<String> result = new HashSet<>(rules.size());
+        Map<String, String> result = new HashMap<>((int) (rules.size() / 0.75));
         for (Rule rule : rules) {
-            result.add(rule.asString());
+            result.put(rule.getId(), rule.asString());
         }
         return result;
     }
@@ -121,6 +121,14 @@ public class RuleEngine {
         }
 
         return possibleResults.get(0).getResultValue();
+    }
+
+    public Function<String, String> getNameTransformator() {
+        return nameTransformator;
+    }
+
+    public Function<String, String> getValueTransformator() {
+        return valueTransformator;
     }
 
     static class Metadata {
