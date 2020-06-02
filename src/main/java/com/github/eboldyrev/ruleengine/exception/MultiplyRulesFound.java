@@ -5,7 +5,7 @@ import com.github.eboldyrev.ruleengine.RuleResult;
 import java.util.Collections;
 import java.util.List;
 
-public class MultiplyRulesFound extends RuntimeException {
+public class MultiplyRulesFound extends RuleEngineException {
 
     private List<RuleResult> rulesResults;
 

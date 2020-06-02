@@ -3,6 +3,7 @@ package com.github.eboldyrev.ruleengine;
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 import com.github.eboldyrev.ruleengine.exception.MultiplyRulesFound;
+import com.github.eboldyrev.ruleengine.exception.RuleEngineException;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,42 +29,50 @@ public class RuleEngine {
     public Map<String, AttributeDefinition> createAttributeDefinitions(Map<String, Integer> attrDefs) {
         Map<String, AttributeDefinition> attributeDefinitions = new HashMap<>((int) (attrDefs.size() / 0.75));
         for (Map.Entry<String, Integer> definition : attrDefs.entrySet()) {
-            String key = nameTransformator != null ? nameTransformator.apply(definition.getKey()) : definition.getKey();
-            attributeDefinitions.put(key, new AttributeDefinition(key, definition.getValue()));
+            String attributeName = nameTransformator != null ? nameTransformator.apply(definition.getKey()) : definition.getKey();
+            attributeDefinitions.put(attributeName, new AttributeDefinition(attributeName, definition.getValue()));
         }
         return attributeDefinitions;
     }
 
+    // can be not safe to use for mass parsing!!!
     public Rule parseRule(String id, String ruleStr) throws InvalidRuleStructure {
-        return Rule.ruleFromString(id, ruleStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
+        return parseRule(metadataRef.get().attributeDefinitions, id, ruleStr);
     }
 
     // TODO support Collection as argument ??
     // TODO return Set ??
+    // THINK WHAT RESULT SHOULD BE RETURNED when Rule was parsed with an exception? Another type InvalidRule or Rule.invalid = true
+    // and Throwable getParseError() -- returns Exception which was raised during parsing
     public List<Rule> parseRules(Map<String, String> idRuleMap) throws InvalidRuleStructure {
-        List<Rule> rules = new ArrayList<>(idRuleMap.size());
-        for (Map.Entry<String, String> entry : idRuleMap.entrySet()) {
-            Rule rule = parseRule(entry.getKey(), entry.getValue());
-            rules.add(rule);
-        }
-        return rules;
+        Map<String, AttributeDefinition> attributeDefinitions = metadataRef.get().attributeDefinitions;
+        return parseRules(attributeDefinitions, idRuleMap);
     }
 
+    // what will happen when setRules and settAttributeDefinitions will be called from different threads
     public void setRules(Map<String, String> idRuleMap) {
         requireNonNull(idRuleMap);
-        List<Rule> rules = parseRules(idRuleMap);
-        metadataRef.set(new Metadata(metadataRef.get().attributeDefinitions, rules));
+        Map<String, AttributeDefinition> attributeDefinitions = metadataRef.get().attributeDefinitions;
+        List<Rule> rules = parseRules(attributeDefinitions, idRuleMap);
+        metadataRef.set(new Metadata(attributeDefinitions, rules));
     }
 
-    public void setAttributesDefinitions(Map<String, Integer> attrDefs) {
+    public void setAttributesDefinitions(Map<String, Integer> attrDefs) throws InvalidRuleStructure {
         requireNonNull(attrDefs);
         Map<String, AttributeDefinition> attributeDefinitions = createAttributeDefinitions(attrDefs);
-        metadataRef.set(new Metadata(attributeDefinitions, metadataRef.get().rules));
+        List<Rule> rules = metadataRef.get().rules;
+        validateRules(rules, attributeDefinitions);
+        metadataRef.set(new Metadata(attributeDefinitions, rules));
     }
 
     public void setRulesAndAttributeDefinitions(Map<String, Integer> attrDefs, Map<String, String> idRuleMap) {
-        setAttributesDefinitions(attrDefs);
-        setRules(idRuleMap);
+        requireNonNull(attrDefs);
+        requireNonNull(idRuleMap);
+
+        Map<String, AttributeDefinition> attributeDefinitions = createAttributeDefinitions(attrDefs);
+        List<Rule> rules = parseRules(attributeDefinitions, idRuleMap);
+
+        metadataRef.set(new Metadata(attributeDefinitions, rules));
     }
 
     public List<Rule> getRules() {
@@ -86,20 +95,55 @@ public class RuleEngine {
     }
 
     public String query(Map<String, String> queryAttrs) throws InvalidRuleStructure {
-        List<RuleAttribute> queryAttributes = Rule.queryFromMap(queryAttrs, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
-        return query(queryAttributes);
+        Metadata metadata = metadataRef.get();
+        List<RuleAttribute> queryAttributes = Rule.queryFromMap(queryAttrs, metadata.attributeDefinitions, nameTransformator, valueTransformator);
+        return query(metadata.rules, queryAttributes);
     }
 
     public String query(String queryAttrsStr) throws InvalidRuleStructure {
-        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrsStr, metadataRef.get().attributeDefinitions, nameTransformator, valueTransformator);
-        return query(queryAttributes);
+        Metadata metadata = metadataRef.get();
+        List<RuleAttribute> queryAttributes = Rule.queryFromString(queryAttrsStr, metadata.attributeDefinitions, nameTransformator, valueTransformator);
+        return query(metadata.rules, queryAttributes);
     }
 
-    private String query(List<RuleAttribute> queryAttributes) {
+    public Function<String, String> getNameTransformator() {
+        return nameTransformator;
+    }
+
+    public Function<String, String> getValueTransformator() {
+        return valueTransformator;
+    }
+
+    private void validateRules(List<Rule> rules, Map<String, AttributeDefinition> attributeDefinitions) {
+        Set<String> definitionsNames = attributeDefinitions.keySet();
+        for (Rule rule : rules) {
+            Set<String> ruleNames = rule.getAttributes().stream().map(RuleAttribute::getName).collect(Collectors.toSet());
+            boolean containsAll = definitionsNames.containsAll(ruleNames);
+            if (!containsAll) {
+                ruleNames.removeAll(definitionsNames);
+                throw new RuleEngineException(String.format("Attribute definitions do not have definition for attribute(s) '%s' in rule '%s'", ruleNames, rule.asString()));
+            }
+        }
+    }
+
+    private List<Rule> parseRules(Map<String, AttributeDefinition> attributeDefinitions,
+                                  Map<String, String> idRuleMap) throws InvalidRuleStructure {
+        List<Rule> rules = new ArrayList<>(idRuleMap.size());
+        for (Map.Entry<String, String> entry : idRuleMap.entrySet()) {
+            Rule rule = parseRule(attributeDefinitions, entry.getKey(), entry.getValue());
+            rules.add(rule);
+        }
+        return rules;
+    }
+
+    private Rule parseRule(Map<String, AttributeDefinition> attributeDefinitions, String id, String ruleStr) throws InvalidRuleStructure {
+        return Rule.ruleFromString(id, ruleStr, attributeDefinitions, nameTransformator, valueTransformator);
+    }
+
+    private String query(List<Rule> currentRules, List<RuleAttribute> queryAttributes) {
         List<RuleResult> possibleResults = new ArrayList<>();
         RuleResult notEqualResult = RuleResult.notEqual(null);
         possibleResults.add(notEqualResult);
-        List<Rule> currentRules = metadataRef.get().rules;
         for (Rule rule : currentRules) {
             RuleResult ruleResult = rule.execute(queryAttributes);
             if (ruleResult.getStatus() == RuleResult.Status.EQUAL) {
@@ -121,14 +165,6 @@ public class RuleEngine {
         }
 
         return possibleResults.get(0).getResultValue();
-    }
-
-    public Function<String, String> getNameTransformator() {
-        return nameTransformator;
-    }
-
-    public Function<String, String> getValueTransformator() {
-        return valueTransformator;
     }
 
     static class Metadata {

@@ -93,7 +93,7 @@ public interface RuleAttribute {
     static int validateRuleAttribute(String ruleAttr) {
         int idx = ruleAttr.indexOf(divider);
         if (idx < 0) {
-            throw new InvalidRuleStructure("Invalid rule attribute: " + ruleAttr);
+            throw new InvalidRuleStructure("Can't parse "+ ruleAttr+". Missing '"+divider+"'.");
         }
         return idx;
     }

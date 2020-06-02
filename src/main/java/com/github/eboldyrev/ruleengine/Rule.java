@@ -20,7 +20,6 @@ public class Rule {
     private final String result;
     private final long weight;
 
-    // todo add rule id -- to easily identify it!
     Rule(String ruleId, List<RuleAttribute> attributes, String result) {
         this.id = ruleId;
         this.attributes = attributes;
@@ -70,6 +69,8 @@ public class Rule {
             throw new InvalidRuleStructure("No attributes found!");
         }
 
+        validateStructure(queryStr, splittedRule.length);
+
         Arrays.sort(splittedRule, naturalOrder());
 
         List<RuleAttribute> attributes = new ArrayList<>(splittedRule.length);
@@ -81,6 +82,19 @@ public class Rule {
             }
         }
         return attributes;
+    }
+
+    private static void validateStructure(String queryStr, int ruleAttributesCount) {
+        int attributeDivCount = 0;
+        for (int i=0; i < queryStr.length(); i++) {
+            char c = queryStr.charAt(i);
+            if (c == RuleAttribute.divider) {
+                attributeDivCount++;
+            }
+        }
+        if (attributeDivCount != ruleAttributesCount) {
+            throw new InvalidRuleStructure("Missed '" + divider + "' between attributes in " + queryStr);
+        }
     }
 
     static List<RuleAttribute> queryFromMap(Map<String, String> queryAttrs,
