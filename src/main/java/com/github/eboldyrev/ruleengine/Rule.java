@@ -12,8 +12,8 @@ import static java.util.Comparator.naturalOrder;
 
 public class Rule {
     private static final String nameValueDivider = ":";
-    private static final String divider = "#";
-    private static final String equalityDivider = "=";
+    static final String divider = "#";
+    static final String equalityDivider = "=";
 
     private final String id;
     private final List<RuleAttribute> attributes;
@@ -88,7 +88,7 @@ public class Rule {
         int attributeDivCount = 0;
         for (int i=0; i < queryStr.length(); i++) {
             char c = queryStr.charAt(i);
-            if (c == RuleAttribute.divider) {
+            if (c == RuleAttribute.divider.charAt(0)) {
                 attributeDivCount++;
             }
         }

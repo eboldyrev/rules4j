@@ -121,7 +121,6 @@ public class RuleEngineTest {
             assertEquals(3, ruleEngine.getAttributesDefinitions().size());
             assertTrue(ruleEngine.getAttributesDefinitions().containsKey("OldClient"));
         }
-
     }
 
 }

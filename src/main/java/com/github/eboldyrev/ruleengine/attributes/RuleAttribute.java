@@ -11,7 +11,7 @@ public interface RuleAttribute {
     int PARTIAL_MATCH_COEFFICIENT = 1;
     int ANY_MATCH_COEFFICIENT = 0;
 
-    char divider = ':';
+    String divider = ":";
     char anyValue = '*';
     String anyCharsValue = "*";
     int weightBase = 2;
