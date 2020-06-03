@@ -135,7 +135,7 @@ public class RuleTest {
             Rule.queryFromMap(queryMap, attributeDefinitions, String::toLowerCase, String::toLowerCase);
             fail("Should throw InvalidRuleStructure");
         } catch (InvalidRuleStructure e) {
-            assertEquals("Empty name: :", e.getMessage());
+            assertEquals("Empty name in ':'", e.getMessage());
         }
     }
 
@@ -153,7 +153,7 @@ public class RuleTest {
             Rule.queryFromMap(queryMap, attributeDefinitions, String::toLowerCase, String::toLowerCase);
             fail("Should throw InvalidRuleStructure");
         } catch (InvalidRuleStructure e) {
-            assertEquals("Empty value: Brand:", e.getMessage());
+            assertEquals("Empty value in 'Brand:'", e.getMessage());
         }
     }
 
