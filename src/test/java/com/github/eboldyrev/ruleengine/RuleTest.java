@@ -72,6 +72,36 @@ public class RuleTest {
     }
 
     @Test
+    public void queryFromString__missedAttributeDivider__throwsInvalidRuleStructure() {
+        RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
+        Map<String, Integer> attributesWithWeight = new HashMap<>();
+        attributesWithWeight.put("Brand", 1);
+        attributesWithWeight.put("Country", 1);
+        Map<String, AttributeDefinition> attributeDefinitions = ruleEngine.createAttributeDefinitions(attributesWithWeight);
+        String queryStr = "Brand:AdidasCountry:Russia";
+        try {
+            Rule.queryFromString(queryStr, attributeDefinitions, String::toLowerCase, String::toLowerCase);
+            fail("Should throw InvalidRuleStructure");
+        } catch(InvalidRuleStructure e){
+            assertEquals("Missed '#' between attributes in Brand:AdidasCountry:Russia", e.getMessage());
+        }
+    }
+
+    @Test
+    public void queryFromString__oneAttribute__success() {
+        RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
+        Map<String, Integer> attributesWithWeight = new HashMap<>();
+        attributesWithWeight.put("Brand", 1);
+        attributesWithWeight.put("Country", 1);
+        Map<String, AttributeDefinition> attributeDefinitions = ruleEngine.createAttributeDefinitions(attributesWithWeight);
+        String queryStr = "Brand:Adidas";
+
+        List<RuleAttribute> ruleAttributes = Rule.queryFromString(queryStr, attributeDefinitions, String::toLowerCase, String::toLowerCase);
+
+        assertEquals(1, ruleAttributes.size());
+    }
+
+    @Test
     public void queryFromMap__unknownAttributeInQueryString__unknownAttributeExcluded() {
         RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
         Map<String, Integer> attributesWithWeight = new HashMap<>();
@@ -143,4 +173,5 @@ public class RuleTest {
             assertEquals("Missed '#' between attributes in Brand:adidas#Country:RussiaOldClient:Yes", e.getMessage());
         }
     }
+
 }

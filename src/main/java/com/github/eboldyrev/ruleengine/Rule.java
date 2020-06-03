@@ -92,7 +92,7 @@ public class Rule {
                 attributeDivCount++;
             }
         }
-        if (attributeDivCount != ruleAttributesCount) {
+        if (attributeDivCount != ruleAttributesCount && !(ruleAttributesCount == 1 && attributeDivCount ==0) ) {
             throw new InvalidRuleStructure("Missed '" + divider + "' between attributes in " + queryStr);
         }
     }
