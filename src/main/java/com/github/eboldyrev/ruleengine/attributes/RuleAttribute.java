@@ -60,9 +60,9 @@ public interface RuleAttribute {
     }
 
     static String validateAndGetValue(String ruleAttr, Function<String, String> valueTransformator, int idx) {
-        String value = ruleAttr.substring(idx+1);
+        String value = ruleAttr.substring(idx+1).trim();
         if (value.length() == 0) {
-            throw new InvalidRuleStructure("Empty value: " + ruleAttr);
+            throw new InvalidRuleStructure("Empty value in '" + ruleAttr+"'");
         }
         if (valueTransformator != null) {
             value = valueTransformator.apply(value);
@@ -75,9 +75,9 @@ public interface RuleAttribute {
                                                   Function<String, String> nameTransformator,
                                                   int idx,
                                                   Function<String, AttributeDefinition> unknownAttributePolicy) {
-        String name = ruleAttr.substring(0, idx);
+        String name = ruleAttr.substring(0, idx).trim();
         if (name.length() == 0) {
-            throw new InvalidRuleStructure("Empty name: " + ruleAttr);
+            throw new InvalidRuleStructure("Empty name in '" + ruleAttr+"'");
         }
         if (nameTransformator != null) {
             name = nameTransformator.apply(name);
