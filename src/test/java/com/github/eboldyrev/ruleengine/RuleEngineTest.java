@@ -1,6 +1,5 @@
 package com.github.eboldyrev.ruleengine;
 
-import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 import com.github.eboldyrev.ruleengine.exception.RuleEngineException;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,9 +43,9 @@ public class RuleEngineTest {
         try {
             ruleEngine.setRules(newRules);
             fail("Should throw InvalidRuleStructure");
-        } catch (InvalidRuleStructure e) {
+        } catch (RuleEngineException e) {
             // verify
-            assertEquals("Unknown rule attribute: UnknownAttribute", e.getMessage());
+            assertEquals("The following rules has errors: rule id: 2, rule: Brand:Puma#Country:Russia#OldClient:Yes#UnknownAttribute:yes=15% has error: Unknown rule attribute: UnknownAttribute", e.getMessage());
             assertEquals(emptyList(), ruleEngine.getRules());
         }
     }
@@ -114,9 +113,9 @@ public class RuleEngineTest {
         try {
             ruleEngine.setRulesAndAttributeDefinitions(attributeDefinitions, rules);
             fail("Should throw InvalidRuleStructure");
-        } catch(InvalidRuleStructure e) {
+        } catch(RuleEngineException e) {
             // verify
-            assertEquals("Unknown rule attribute: OldClient", e .getMessage());
+            assertEquals("The following rules has errors: rule id: 1, rule: Brand:Puma#Country:Russia#OldClient:Yes=15% has error: Unknown rule attribute: OldClient", e .getMessage());
             assertEquals(2, ruleEngine.getRules().size());
             assertEquals(3, ruleEngine.getAttributesDefinitions().size());
             assertTrue(ruleEngine.getAttributesDefinitions().containsKey("OldClient"));

@@ -15,7 +15,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 public class RuleEngine {
-
     private final AtomicReference<Metadata> metadataRef = new AtomicReference<>(Metadata.EMPTY_METADATA);
     private final Function<String, String> nameTransformator;
     private final Function<String, String> valueTransformator;
@@ -42,9 +41,8 @@ public class RuleEngine {
 
     // TODO support Collection as argument ??
     // TODO return Set ??
-    // THINK WHAT RESULT SHOULD BE RETURNED when Rule was parsed with an exception? Another type InvalidRule or Rule.invalid = true
-    // and Throwable getParseError() -- returns Exception which was raised during parsing
-    public List<Rule> parseRules(Map<String, String> idRuleMap) throws InvalidRuleStructure {
+    // LATER add policy for batch parsing : throw exception or return invalid and valid rules
+    public List<RuleOrError> parseRules(Map<String, String> idRuleMap) throws InvalidRuleStructure {
         Map<String, AttributeDefinition> attributeDefinitions = metadataRef.get().attributeDefinitions;
         return parseRules(attributeDefinitions, idRuleMap);
     }
@@ -53,7 +51,8 @@ public class RuleEngine {
     public void setRules(Map<String, String> idRuleMap) {
         requireNonNull(idRuleMap);
         Map<String, AttributeDefinition> attributeDefinitions = metadataRef.get().attributeDefinitions;
-        List<Rule> rules = parseRules(attributeDefinitions, idRuleMap);
+        List<RuleOrError> ruleOrErrors = parseRules(attributeDefinitions, idRuleMap);
+        List<Rule> rules = checkForErrors(ruleOrErrors);
         metadataRef.set(new Metadata(attributeDefinitions, rules));
     }
 
@@ -70,9 +69,29 @@ public class RuleEngine {
         requireNonNull(idRuleMap);
 
         Map<String, AttributeDefinition> attributeDefinitions = createAttributeDefinitions(attrDefs);
-        List<Rule> rules = parseRules(attributeDefinitions, idRuleMap);
+        List<RuleOrError> ruleOrErrors = parseRules(attributeDefinitions, idRuleMap);
+        List<Rule> rules = checkForErrors(ruleOrErrors);
 
         metadataRef.set(new Metadata(attributeDefinitions, rules));
+    }
+
+    private List<Rule> checkForErrors(List<RuleOrError> ruleOrErrors) {
+        List<Rule> rules = new ArrayList<>(ruleOrErrors.size());
+        List<RuleOrError> errors = new ArrayList<>(ruleOrErrors.size());
+        for (RuleOrError ruleOrError : ruleOrErrors) {
+            if (ruleOrError.isRule()) {
+                rules.add(ruleOrError.getRule());
+            } else if (ruleOrError.isError()) {
+                errors.add(ruleOrError);
+            }
+        }
+
+        if (!errors.isEmpty()){
+            String errorMsg = errors.stream()
+                    .map(roe -> "rule id: " + roe.getRuleId() + ", rule: " + roe.getRuleStr() + " has error: " + roe.getError().getMessage()).collect(Collectors.joining(","));
+            throw new RuleEngineException("The following rules has errors: "+ errorMsg);
+        }
+        return rules;
     }
 
     public List<Rule> getRules() {
@@ -126,14 +145,18 @@ public class RuleEngine {
         }
     }
 
-    private List<Rule> parseRules(Map<String, AttributeDefinition> attributeDefinitions,
+    private List<RuleOrError> parseRules(Map<String, AttributeDefinition> attributeDefinitions,
                                   Map<String, String> idRuleMap) throws InvalidRuleStructure {
-        List<Rule> rules = new ArrayList<>(idRuleMap.size());
+        List<RuleOrError> results = new ArrayList<>(idRuleMap.size());
         for (Map.Entry<String, String> entry : idRuleMap.entrySet()) {
-            Rule rule = parseRule(attributeDefinitions, entry.getKey(), entry.getValue());
-            rules.add(rule);
+            try {
+                Rule rule = parseRule(attributeDefinitions, entry.getKey(), entry.getValue());
+                results.add(RuleOrError.rule(rule));
+            } catch (Exception e) {
+                results.add(RuleOrError.error(entry.getKey(), entry.getValue(), e));
+            }
         }
-        return rules;
+        return results;
     }
 
     private Rule parseRule(Map<String, AttributeDefinition> attributeDefinitions, String id, String ruleStr) throws InvalidRuleStructure {
