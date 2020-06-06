@@ -4,6 +4,7 @@ import com.github.eboldyrev.ruleengine.AttributeDefinition;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface RuleAttribute {
@@ -32,7 +33,8 @@ public interface RuleAttribute {
                                     Map<String, AttributeDefinition> attributeDefinitions,
                                     Function<String, String> nameTransformator,
                                     Function<String, String> valueTransformator,
-                                    Function<String, AttributeDefinition> unknownAttributePolicy){
+                                    Function<String, AttributeDefinition> unknownAttributePolicy,
+                                    Consumer<RuleAttribute> validateAttributeType){
         int idx = validateRuleAttribute(ruleAttr);
 
         AttributeDefinition attributeDefinition = validateAndGetName(ruleAttr, attributeDefinitions, nameTransformator,
@@ -41,19 +43,21 @@ public interface RuleAttribute {
         if (attributeDefinition != null) {
             String value = validateAndGetValue(ruleAttr, valueTransformator, idx);
 
+            RuleAttribute result;
             if (value.length() == 1 && value.charAt(0) == anyValue) {
-                return new AnyRuleAttribute(attributeDefinition, value);
+                result = new AnyRuleAttribute(attributeDefinition, value);
+            } else if (value.endsWith(anyCharsValue)) {
+                result = new StartsWithRuleAttribute(attributeDefinition, value.substring(0, value.length() - 1));
+            } else if (value.startsWith(anyCharsValue)) {
+                result = new EndsWithRuleAttribute(attributeDefinition, value.substring(1));
+            } else {
+                result = new ExactMatchAttribute(attributeDefinition, value);
+            }
+            if (validateAttributeType != null) {
+                validateAttributeType.accept(result);
             }
 
-            if (value.endsWith(anyCharsValue)) {
-                return new StartsWithRuleAttribute(attributeDefinition, value.substring(0, value.length() - 1));
-            }
-
-            if (value.startsWith(anyCharsValue)) {
-                return new EndsWithRuleAttribute(attributeDefinition, value.substring(1));
-            }
-
-            return new BasicRuleAttribute(attributeDefinition, value);
+            return result;
         }
 
         return null;

@@ -54,7 +54,7 @@ public class RuleAttributeTest {
 
     private void fromString__emptyAttributePartsParam__throwsInvalidRuleStructure(String ruleAttr, String expectedMessage){
         try {
-            RuleAttribute.fromString(ruleAttr, attributeDefinitions, null, null, name -> null);
+            RuleAttribute.fromString(ruleAttr, attributeDefinitions, null, null, name -> null, ra -> {});
             fail("Should throw InvalidRuleStructure");
         } catch(InvalidRuleStructure e){
             assertEquals(expectedMessage, e.getMessage());

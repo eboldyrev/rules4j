@@ -25,7 +25,7 @@ public class RuleEngine {
         this.valueTransformator = attributeValueTransformator;
     }
 
-    public Map<String, AttributeDefinition> createAttributeDefinitions(Map<String, Integer> attrDefs) {
+    public Map<String, AttributeDefinition> createAttributeDefinitions(Map<String, Integer> attrDefs) throws InvalidRuleStructure {
         Map<String, AttributeDefinition> attributeDefinitions = new HashMap<>((int) (attrDefs.size() / 0.75));
         for (Map.Entry<String, Integer> definition : attrDefs.entrySet()) {
             String attributeName = nameTransformator != null ? nameTransformator.apply(definition.getKey()) : definition.getKey();
@@ -75,7 +75,7 @@ public class RuleEngine {
         metadataRef.set(new Metadata(attributeDefinitions, rules));
     }
 
-    private List<Rule> checkForErrors(List<RuleOrError> ruleOrErrors) {
+    public static List<Rule> checkForErrors(List<RuleOrError> ruleOrErrors) throws RuleEngineException{
         List<Rule> rules = new ArrayList<>(ruleOrErrors.size());
         List<RuleOrError> errors = new ArrayList<>(ruleOrErrors.size());
         for (RuleOrError ruleOrError : ruleOrErrors) {

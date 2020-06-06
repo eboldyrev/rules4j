@@ -1,9 +1,11 @@
 package com.github.eboldyrev.ruleengine;
 
+import com.github.eboldyrev.ruleengine.attributes.ExactMatchAttribute;
 import com.github.eboldyrev.ruleengine.attributes.RuleAttribute;
 import com.github.eboldyrev.ruleengine.exception.InvalidRuleStructure;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,7 +49,9 @@ public class Rule {
         return queryFromString(ruleStr, attributeDefinitions, nameTransformator, valueTransformator,
                 name -> {
                     throw new InvalidRuleStructure("Unknown rule attribute: " + name);
-                });
+                },
+                ruleAttribute -> {}
+        );
     }
 
     static List<RuleAttribute> queryFromString(String queryStr,
@@ -55,14 +59,21 @@ public class Rule {
                                                Function<String, String> nameTransformator,
                                                Function<String, String> valueTransformator) throws InvalidRuleStructure {
         return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator,
-                name -> null);
+                name -> null,
+                ruleAttribute -> {
+                    if (!(ruleAttribute instanceof ExactMatchAttribute)) {
+                        throw new InvalidRuleStructure("Only exact match values allowed in query.");
+                    }
+                }
+        );
     }
 
     private static List<RuleAttribute> queryFromString(String queryStr,
                                                        Map<String, AttributeDefinition> attributeDefinitions,
                                                        Function<String, String> nameTransformator,
                                                        Function<String, String> valueTransformator,
-                                                       Function<String, AttributeDefinition> unknownAttributePolicy) {
+                                                       Function<String, AttributeDefinition> unknownAttributePolicy,
+                                                       Consumer<RuleAttribute> validRuleAttributePredicate) {
         String[] splittedRule = queryStr.split(divider);
 
         if (splittedRule.length == 0) {
@@ -76,7 +87,7 @@ public class Rule {
         List<RuleAttribute> attributes = new ArrayList<>(splittedRule.length);
         for (String ruleAttrStr : splittedRule) {
             RuleAttribute ruleAttribute = RuleAttribute.fromString(ruleAttrStr, attributeDefinitions,
-                    nameTransformator, valueTransformator, unknownAttributePolicy);
+                    nameTransformator, valueTransformator, unknownAttributePolicy, validRuleAttributePredicate);
             if (ruleAttribute != null) {
                 attributes.add(ruleAttribute);
             }

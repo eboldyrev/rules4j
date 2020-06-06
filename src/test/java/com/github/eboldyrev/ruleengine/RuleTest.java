@@ -102,6 +102,36 @@ public class RuleTest {
     }
 
     @Test
+    public void queryFromString__startsWithAttribute__throwsInvalidRuleStructure() {
+        queryFromString__nonExactmatchAttributeParam__throwsInvalidRuleStructure("Country:Ru*#Brand:Adidas");
+    }
+
+    @Test
+    public void queryFromString__endsWithAttribute__throwsInvalidRuleStructure() {
+        queryFromString__nonExactmatchAttributeParam__throwsInvalidRuleStructure("Country:Russia#Brand:*das");
+    }
+
+    @Test
+    public void queryFromString__anyAttribute__throwsInvalidRuleStructure() {
+        queryFromString__nonExactmatchAttributeParam__throwsInvalidRuleStructure("Country:Russia#Brand:*");
+    }
+
+    public void queryFromString__nonExactmatchAttributeParam__throwsInvalidRuleStructure(String queryStr) {
+        RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
+        Map<String, Integer> attributesWithWeight = new HashMap<>();
+        attributesWithWeight.put("Country", 1);
+        attributesWithWeight.put("Brand", 1);
+        Map<String, AttributeDefinition> attributeDefinitions = ruleEngine.createAttributeDefinitions(attributesWithWeight);
+
+        try {
+            List<RuleAttribute> ruleAttributes = Rule.queryFromString(queryStr, attributeDefinitions, String::toLowerCase, String::toLowerCase);
+            fail("Should throw InvalidRuleStructure");
+        } catch (InvalidRuleStructure e) {
+            assertEquals("Only exact match values allowed in query.", e.getMessage());
+        }
+    }
+
+    @Test
     public void queryFromMap__unknownAttributeInQueryString__unknownAttributeExcluded() {
         RuleEngine ruleEngine = new RuleEngine(String::toLowerCase, String::toLowerCase);
         Map<String, Integer> attributesWithWeight = new HashMap<>();

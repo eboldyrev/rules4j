@@ -4,7 +4,7 @@ import com.github.eboldyrev.ruleengine.AttributeDefinition;
 
 import java.util.Objects;
 
-public class BasicRuleAttribute implements RuleAttribute {
+public abstract class BasicRuleAttribute implements RuleAttribute {
 
     protected final String value;
     protected final AttributeDefinition definition;
@@ -35,14 +35,10 @@ public class BasicRuleAttribute implements RuleAttribute {
     }
 
     @Override
-    public int getWeight() {
-        return (int) Math.pow(weightBase, EXACT_MATCH_COEFFICIENT + definition.getWeight());
-    }
+    public abstract int getWeight();
 
     @Override
-    public boolean calculate(RuleAttribute other) {
-        return this.equals(other);
-    }
+    public abstract boolean calculate(RuleAttribute other);
 
     @Override
     public boolean equals(Object o) {
