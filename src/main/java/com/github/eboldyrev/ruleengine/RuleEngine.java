@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.github.eboldyrev.ruleengine.utils.Utils.isEmpty;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -76,6 +77,10 @@ public class RuleEngine {
     }
 
     public static List<Rule> checkForErrors(List<RuleOrError> ruleOrErrors) throws RuleEngineException{
+        if (isEmpty(ruleOrErrors)){
+            return emptyList();
+        }
+
         List<Rule> rules = new ArrayList<>(ruleOrErrors.size());
         List<RuleOrError> errors = new ArrayList<>(ruleOrErrors.size());
         for (RuleOrError ruleOrError : ruleOrErrors) {
@@ -133,7 +138,7 @@ public class RuleEngine {
         return valueTransformator;
     }
 
-    private void validateRules(List<Rule> rules, Map<String, AttributeDefinition> attributeDefinitions) {
+    public static void validateRules(List<Rule> rules, Map<String, AttributeDefinition> attributeDefinitions) {
         Set<String> definitionsNames = attributeDefinitions.keySet();
         for (Rule rule : rules) {
             Set<String> ruleNames = rule.getAttributes().stream().map(RuleAttribute::getName).collect(Collectors.toSet());
@@ -147,6 +152,10 @@ public class RuleEngine {
 
     private List<RuleOrError> parseRules(Map<String, AttributeDefinition> attributeDefinitions,
                                   Map<String, String> idRuleMap) throws InvalidRuleStructure {
+        if (isEmpty(idRuleMap)) {
+            return emptyList();
+        }
+
         List<RuleOrError> results = new ArrayList<>(idRuleMap.size());
         for (Map.Entry<String, String> entry : idRuleMap.entrySet()) {
             try {
