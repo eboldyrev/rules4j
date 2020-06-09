@@ -19,13 +19,20 @@ public class Rule {
 
     private final String id;
     private final List<RuleAttribute> attributes;
+    private final Set<String> attributeNames;
     private final String result;
     private final long weight;
 
     Rule(String ruleId, List<RuleAttribute> attributes, String result) {
         this.id = ruleId;
         this.attributes = attributes;
-        this.weight = attributes.stream().map(RuleAttribute::getWeight).reduce(0, Integer::sum);
+        this.attributeNames = new HashSet<>((int)(attributes.size() / 0.75));
+        int tmp = 0;
+        for (RuleAttribute ruleAttribute : attributes) {
+            tmp = tmp + ruleAttribute.getWeight();
+            attributeNames.add(ruleAttribute.getName());
+        }
+        this.weight = tmp;
         this.result = result;
     }
 
@@ -50,7 +57,8 @@ public class Rule {
                 name -> {
                     throw new InvalidRuleStructure("Unknown rule attribute: " + name);
                 },
-                ruleAttribute -> {}
+                ruleAttribute -> {
+                }
         );
     }
 
@@ -97,13 +105,13 @@ public class Rule {
 
     private static void validateStructure(String queryStr, int ruleAttributesCount) {
         int attributeDivCount = 0;
-        for (int i=0; i < queryStr.length(); i++) {
+        for (int i = 0; i < queryStr.length(); i++) {
             char c = queryStr.charAt(i);
             if (c == RuleAttribute.divider.charAt(0)) {
                 attributeDivCount++;
             }
         }
-        if (attributeDivCount != ruleAttributesCount && !(ruleAttributesCount == 1 && attributeDivCount ==0) ) {
+        if (attributeDivCount != ruleAttributesCount && !(ruleAttributesCount == 1 && attributeDivCount == 0)) {
             throw new InvalidRuleStructure("Missed '" + divider + "' between attributes in " + queryStr);
         }
     }
@@ -118,8 +126,10 @@ public class Rule {
         return queryFromString(queryStr, attributeDefinitions, nameTransformator, valueTransformator);
     }
 
-    RuleResult execute(List<RuleAttribute> queryAttributes) {
+    RuleResult execute(List<RuleAttribute> queryAttributes, Set<String> queryAttributeNames) {
         if (this.attributes.size() > queryAttributes.size()) {
+            return RuleResult.notApplicable(this);
+        } else if (this.attributes.size() == queryAttributes.size() && !this.attributeNames.containsAll(queryAttributeNames)) {
             return RuleResult.notApplicable(this);
         }
 

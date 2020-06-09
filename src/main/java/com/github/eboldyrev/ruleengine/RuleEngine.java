@@ -176,8 +176,10 @@ public class RuleEngine {
         List<RuleResult> possibleResults = new ArrayList<>();
         RuleResult notEqualResult = RuleResult.notEqual(null);
         possibleResults.add(notEqualResult);
+        Set<String> queryAttributeNames = queryAttributes.stream().map(RuleAttribute::getName).collect(Collectors.toSet());
+
         for (Rule rule : currentRules) {
-            RuleResult ruleResult = rule.execute(queryAttributes);
+            RuleResult ruleResult = rule.execute(queryAttributes, queryAttributeNames);
             if (ruleResult.getStatus() == RuleResult.Status.EQUAL) {
                 if (possibleResults.get(0).getRuleWeight() <= ruleResult.getRuleWeight()) {
                     possibleResults.add(0, ruleResult);

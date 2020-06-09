@@ -48,10 +48,25 @@ public class RuleEngine_rulesTest {
         ruleEngine.setRulesAndAttributeDefinitions(attributeDefinitions, rules);
 
         // act
-        String result = ruleEngine.query("Brand:Puma#Country:Russia#OldClient:No");
+        String result = ruleEngine.query("OldClient:No#Country:Russia#Brand:Puma");
 
         // verify
         assertEquals("10%", result);
+    }
+
+    @Test
+    public void query__2ExactMatchAttributesRule_queryWith1SameValuesAsInRule__noRuleFound() {
+        // setup
+        Map<String, String> rules = new HashMap<>();
+        rules.put("1", "Country:Russia#OldClient:No=10%");
+
+        ruleEngine.setRulesAndAttributeDefinitions(attributeDefinitions, rules);
+
+        // act
+        String result = ruleEngine.query("Brand:Puma#Country:Russia");
+
+        // verify
+        assertNull(result);
     }
 
     @Test
