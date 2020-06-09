@@ -112,7 +112,11 @@ public class Rule {
             }
         }
         if (attributeDivCount != ruleAttributesCount && !(ruleAttributesCount == 1 && attributeDivCount == 0)) {
-            throw new InvalidRuleStructure("Missed '" + divider + "' between attributes in " + queryStr);
+            String missedPart = divider;
+            if (attributeDivCount < ruleAttributesCount) {
+                missedPart = RuleAttribute.divider;
+            }
+            throw new InvalidRuleStructure("Incorrect query structure. Missed '" + missedPart + "' in " + queryStr);
         }
     }
 
