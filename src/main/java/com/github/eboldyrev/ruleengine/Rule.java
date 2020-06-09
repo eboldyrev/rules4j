@@ -10,7 +10,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
-import static java.util.Comparator.naturalOrder;
 
 public class Rule {
     private static final String nameValueDivider = ":";
@@ -90,8 +89,6 @@ public class Rule {
 
         validateStructure(queryStr, splittedRule.length);
 
-        Arrays.sort(splittedRule, naturalOrder());
-
         List<RuleAttribute> attributes = new ArrayList<>(splittedRule.length);
         for (String ruleAttrStr : splittedRule) {
             RuleAttribute ruleAttribute = RuleAttribute.fromString(ruleAttrStr, attributeDefinitions,
@@ -100,6 +97,9 @@ public class Rule {
                 attributes.add(ruleAttribute);
             }
         }
+
+        attributes.sort(Comparator.comparing(RuleAttribute::getName));
+
         return attributes;
     }
 
@@ -129,7 +129,7 @@ public class Rule {
     RuleResult execute(List<RuleAttribute> queryAttributes, Set<String> queryAttributeNames) {
         if (this.attributes.size() > queryAttributes.size()) {
             return RuleResult.notApplicable(this);
-        } else if (this.attributes.size() == queryAttributes.size() && !this.attributeNames.containsAll(queryAttributeNames)) {
+        } else if (!queryAttributeNames.containsAll(this.attributeNames)) {
             return RuleResult.notApplicable(this);
         }
 
