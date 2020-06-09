@@ -38,6 +38,23 @@ public class RuleEngine_rulesTest {
     }
 
     @Test
+    public void query__3ExactMatchAttributesRule_queryWith2SameValuesAsInRule__ruleFound() {
+        // setup
+        Map<String, String> rules = new HashMap<>();
+        rules.put("1", "Brand:Puma#Country:Russia=10%");
+        rules.put("2", "Brand:Puma#Country:Russia#OldClient:Yes=15%");
+        rules.put("3", "Brand:Puma=5%");
+
+        ruleEngine.setRulesAndAttributeDefinitions(attributeDefinitions, rules);
+
+        // act
+        String result = ruleEngine.query("Brand:Puma#Country:Russia#OldClient:No");
+
+        // verify
+        assertEquals("10%", result);
+    }
+
+    @Test
     public void query__2ExactMatchAttributesRule_queryWith2SameValuesAsInRuleAndOneExtraAttribute__ruleFound() {
         // setup
         ruleEngine.setRulesAndAttributeDefinitions(attributeDefinitions,
