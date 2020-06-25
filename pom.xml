@@ -22,7 +22,7 @@
 
     <groupId>com.github.eboldyrev</groupId>
     <artifactId>rules4j</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
 
     <name>rules4j</name>
     <description>Minimalistic yet powerful rule engine for Java</description>

@@ -44,6 +44,7 @@ public abstract class BasicRuleAttribute implements RuleAttribute {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof RuleAttribute)) return false;
+        if (!o.getClass().equals(this.getClass())) return false;
         RuleAttribute that = (RuleAttribute) o;
         return definition.equals(that.getDefinition()) && value.equals(that.getValue());
     }
